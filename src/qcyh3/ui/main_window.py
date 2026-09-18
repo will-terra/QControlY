@@ -84,20 +84,29 @@ class MainWindow(QMainWindow):
         panel = QWidget()
         panel.setObjectName("Panel")
         root = QVBoxLayout(panel)
-        root.setContentsMargins(20, 20, 20, 20)
-        root.setSpacing(15)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        inner = QWidget()
+        inner_layout = QVBoxLayout(inner)
+        inner_layout.setContentsMargins(20, 20, 20, 20)
+        inner_layout.setSpacing(15)
 
         # -- Topo: bateria + nome ------------------------------------------
         self.battery_lbl = QLabel("—")
         self.battery_lbl.setObjectName("BatteryEmpty")
-        self.battery_lbl.setAlignment(Qt.AlignCenter)
+        self.battery_lbl.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
 
         self.device_name_lbl = QLabel("QCY H3S")
         self.device_name_lbl.setObjectName("DeviceName")
-        self.device_name_lbl.setAlignment(Qt.AlignCenter)
+        self.device_name_lbl.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
 
-        root.addWidget(self.battery_lbl)
-        root.addWidget(self.device_name_lbl)
+        head = QHBoxLayout()
+        head.setSpacing(10)
+        head.addWidget(self.battery_lbl)
+        head.addWidget(self.device_name_lbl)
+        head.addStretch()
+        inner_layout.addLayout(head)
 
         # -- ANC -----------------------------------------------------------
         self.anc_buttons: dict[AncMode, QPushButton] = {}
@@ -113,13 +122,13 @@ class MainWindow(QMainWindow):
             anc_group.addButton(b)
             self.anc_buttons[mode] = b
             anc_layout.addWidget(b)
-        root.addLayout(anc_layout)
+        inner_layout.addLayout(anc_layout)
 
         # -- Equalizador (expansível) --------------------------------------
         self.eq_toggle = QPushButton("Equalizador · Padrão")
         self.eq_toggle.setObjectName("Link")
         self.eq_toggle.clicked.connect(self._toggle_eq_panel)
-        root.addWidget(self.eq_toggle)
+        inner_layout.addWidget(self.eq_toggle)
 
         self.eq_panel = QWidget()
         eq_layout = QVBoxLayout(self.eq_panel)
@@ -129,7 +138,7 @@ class MainWindow(QMainWindow):
         self.eq_buttons: dict[EqPreset, QPushButton] = {}
         eq_group = QButtonGroup(self)
         for preset in EqPreset:
-            b = QPushButton(preset.value.capitalize())
+            b = QPushButton(f"○  {preset.value.capitalize()}")
             b.setObjectName("EqRow")
             b.setCheckable(True)
             b.setEnabled(False)
@@ -139,7 +148,7 @@ class MainWindow(QMainWindow):
             eq_layout.addWidget(b)
         self.eq_buttons[EqPreset.DEFAULT].setChecked(True)
         self.eq_panel.setVisible(False)
-        root.addWidget(self.eq_panel)
+        inner_layout.addWidget(self.eq_panel)
 
         # -- Lista de dispositivos (visível durante scan) ------------------
         self.scan_link = QPushButton("Escanear")
@@ -159,12 +168,13 @@ class MainWindow(QMainWindow):
         self.disconnect_btn.clicked.connect(self.worker.disconnect_device)
         self.disconnect_btn.setVisible(False)
 
-        root.addWidget(self.scan_link)
-        root.addWidget(self.device_list)
-        root.addWidget(self.connect_btn)
-        root.addWidget(self.disconnect_btn)
+        inner_layout.addWidget(self.scan_link)
+        inner_layout.addWidget(self.device_list)
+        inner_layout.addWidget(self.connect_btn)
+        inner_layout.addWidget(self.disconnect_btn)
 
-        root.addStretch()
+        inner_layout.addStretch()
+        root.addWidget(inner)
 
         # -- Rodapé --------------------------------------------------------
         footer = QWidget()
@@ -184,6 +194,7 @@ class MainWindow(QMainWindow):
         root.addWidget(footer)
 
         self.setCentralWidget(panel)
+        self.statusBar().hide()
 
     def _wire_worker(self) -> None:
         w = self.worker
@@ -198,8 +209,14 @@ class MainWindow(QMainWindow):
     def _toggle_eq_panel(self):
         self.eq_panel.setVisible(not self.eq_panel.isVisible())
 
+    def _mark_eq(self, active: EqPreset):
+        for preset, btn in self.eq_buttons.items():
+            mark = "●" if preset is active else "○"
+            btn.setText(f"{mark}  {preset.value.capitalize()}")
+
     def _on_eq_selected(self, preset: EqPreset):
         self.eq_toggle.setText(f"Equalizador · {preset.value.capitalize()}")
+        self._mark_eq(preset)
         if self.worker.is_connected:
             self.worker.set_eq(preset)
 
@@ -271,3 +288,4 @@ class MainWindow(QMainWindow):
             if state.eq in self.eq_buttons:
                 self.eq_buttons[state.eq].setChecked(True)
             self.eq_toggle.setText(f"Equalizador · {state.eq.value.capitalize()}")
+            self._mark_eq(state.eq)
