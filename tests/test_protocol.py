@@ -1,4 +1,4 @@
-from qcyh3.core.protocol import Frame, FrameParser, build_frame
+from qcontroly.core.protocol import Frame, FrameParser, build_frame
 
 def test_build_frame_simples():
     # Opcode 0xFE, Payload: b"\x17"
