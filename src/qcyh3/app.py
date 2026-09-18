@@ -1,12 +1,16 @@
 import logging
 import sys
+from pathlib import Path
 from PySide6.QtWidgets import QApplication
 from .ui.main_window import MainWindow
+
+_QSS = Path(__file__).parent / "ui" / "nanquim.qss"
 
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s: %(message)s")
     app = QApplication(sys.argv)
+    app.setStyleSheet(_QSS.read_text(encoding="utf-8"))
     app.setQuitOnLastWindowClosed(False)
     win = MainWindow()
     win.show()
